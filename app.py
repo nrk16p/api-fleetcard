@@ -8,8 +8,7 @@ from pathlib import Path
 app = Flask(__name__)
 
 # Output directory
-OUTPUT_DIR = Path("outputs")
-OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_DIR = Path("/tmp")
 
 STANDARD_COLS = [
     'date', 'fuel_type', 'amount', 'price', 'number_plate',
