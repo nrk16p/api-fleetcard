@@ -1,14 +1,10 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify
 import pandas as pd
 import io
-import os
 import re
 from pathlib import Path
 
 app = Flask(__name__)
-
-# Output directory
-OUTPUT_DIR = Path("/tmp")
 
 STANDARD_COLS = [
     'date', 'fuel_type', 'amount', 'price', 'number_plate',
@@ -32,28 +28,17 @@ def clean_number_plate(plate):
 # ==============================
 def process_bangchak(file_bytes):
     df = pd.read_excel(io.BytesIO(file_bytes))
-
-    # drop first 17 rows
     df = df.iloc[17:].reset_index(drop=True)
-
-    # set header
     df.columns = df.iloc[0]
     df = df[1:].reset_index(drop=True)
-
-    # drop NA card no
     df = df.dropna(subset=['Card no.'])
-
-    # select columns
     df = df.iloc[:, [0, 15, 16, 22, 13, 3, 3, 11, 18, 20]]
-
-    # filter Department
     df.iloc[:, 0] = df.iloc[:, 0].astype(str)
     df = df[~df.iloc[:, 0].str.startswith('Department:')]
 
     header_col_3 = df.columns[4]
     header_col_4 = df.columns[5]
 
-    # fuel_type logic
     valid_fuel_types = [
         "DIESEL", "HI DIESEL S", "HI DIESEL S B10", "HI DIESEL S B7",
         "HI PREMIUM DIESEL S B7", "GASOHOL E20S EVO", "NGV"
@@ -89,7 +74,6 @@ def process_bangchak(file_bytes):
     }
     df.rename(columns=new_column_names, inplace=True)
 
-    # insert fuel_type back
     df.insert(1, 'fuel_type', fuel_type_series.reindex(df.index).values)
 
     df["source"] = "Bangchak"
@@ -108,28 +92,17 @@ def process_bangchak(file_bytes):
 # ==============================
 def process_ptt(file_bytes):
     df = pd.read_excel(io.BytesIO(file_bytes))
-
-    # drop first 18 rows
     df = df.iloc[18:].reset_index(drop=True)
-
-    # set header
     df.columns = df.iloc[0]
     df = df[1:].reset_index(drop=True)
-
-    # drop NA card no
     df = df.dropna(subset=['Card no.'])
-
-    # select columns
     df = df.iloc[:, [0, 15, 16, 22, 13, 3, 3, 11, 18, 20]]
-
-    # filter Department
     df.iloc[:, 0] = df.iloc[:, 0].astype(str)
     df = df[~df.iloc[:, 0].str.startswith('Department:')]
 
     header_col_3 = df.columns[4]
     header_col_4 = df.columns[5]
 
-    # fuel_type logic
     valid_fuel_types = [
         "DIESEL", "HI DIESEL S", "HI DIESEL S B10", "HI DIESEL S B7",
         "HI PREMIUM DIESEL S B7", "GASOHOL E20S EVO", "NGV"
@@ -165,7 +138,6 @@ def process_ptt(file_bytes):
     }
     df.rename(columns=new_column_names, inplace=True)
 
-    # insert fuel_type back
     df.insert(1, 'fuel_type', fuel_type_series.reindex(df.index).values)
 
     df["source"] = "PTT"
@@ -180,12 +152,11 @@ def process_ptt(file_bytes):
     return df
 
 # ==============================
-# 📌 Caltex processor (unchanged)
+# 📌 Caltex processor
 # ==============================
 def process_caltex(file_bytes):
     sheets = pd.read_excel(io.BytesIO(file_bytes), sheet_name=None, engine="openpyxl")
     df = pd.concat([d.assign(sheet_name=name) for name, d in sheets.items()], ignore_index=True)
-
     df = df[['Transaction Date and Time','Product','Quantity', 'Pump Price',
              'License Plate','Card Number','Location Name','Reference No',
              'Customer Value Tax Inclusive','Customer Value Tax Exclusive']]
@@ -209,14 +180,13 @@ def process_caltex(file_bytes):
     return df
 
 # ==============================
-# 📌 PT processor (unchanged)
+# 📌 PT processor
 # ==============================
 def process_pt(file_bytes):
     df = pd.read_excel(io.BytesIO(file_bytes))
     df = df.iloc[6:].reset_index(drop=True)
     df.columns = df.iloc[0]
     df = df[1:].reset_index(drop=True)
-
     df = df[['DATE','PRODUCT_TYPE','LITRE','UNIT_PRICE',
              'LICENSE_PLATE_NO','CARD_NO','BRANCH_NAME',
              'เลขที่ใบกำกับ','Amount Ex-vat','AMOUNT']]
@@ -262,10 +232,8 @@ def upload(vendor):
         else:
             return jsonify({"error": f"Vendor {vendor} not supported"}), 400
 
-        out_path = OUTPUT_DIR / f"{vendor}_standard.xlsx"
-        df.to_excel(out_path, index=False)
-
-        return send_file(out_path, as_attachment=True)
+        # ✅ return JSON instead of Excel
+        return jsonify(df.to_dict(orient="records"))
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
