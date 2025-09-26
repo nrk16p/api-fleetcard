@@ -163,7 +163,7 @@ def read_excel_auto(file_bytes, filename=None):
     return pd.read_excel(io.BytesIO(file_bytes), engine="openpyxl")
 
 def process_caltex(file_bytes):
-    sheets = pd.read_excel_auto(io.BytesIO(file_bytes), sheet_name=None, engine="xlrd")
+    sheets = pd.read_excel(io.BytesIO(file_bytes), sheet_name=None, engine="xlrd")
     df = pd.concat([d.assign(sheet_name=name) for name, d in sheets.items()], ignore_index=True)
     df = df[['Transaction Date and Time','Product','Quantity', 'Pump Price',
              'License Plate','Card Number','Location Name','Reference No',
