@@ -227,6 +227,7 @@ def upload(vendor):
 
     file = request.files["file"]
     file_bytes = file.read()
+    filename = file.filename
 
     try:
         if vendor.lower() == "bangchak":
@@ -236,7 +237,7 @@ def upload(vendor):
         elif vendor.lower() == "caltex":
             df = process_caltex(file_bytes)
         elif vendor.lower() == "pt":
-            df = process_pt(file_bytes)
+            df = process_pt(file_bytes, filename)
         else:
             return jsonify({"error": f"Vendor {vendor} not supported"}), 400
 
