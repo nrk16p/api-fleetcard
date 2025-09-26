@@ -154,8 +154,16 @@ def process_ptt(file_bytes):
 # ==============================
 # 📌 Caltex processor
 # ==============================
+
+def read_excel_auto(file_bytes, filename=None):
+    # ถ้าเป็นไฟล์ .xls → ใช้ xlrd
+    if filename and filename.lower().endswith(".xls"):
+        return pd.read_excel(io.BytesIO(file_bytes), engine="xlrd")
+    # ถ้าเป็น .xlsx หรือไม่รู้ → ใช้ openpyxl
+    return pd.read_excel(io.BytesIO(file_bytes), engine="openpyxl")
+
 def process_caltex(file_bytes):
-    sheets = pd.read_excel(io.BytesIO(file_bytes), sheet_name=None, engine="openpyxl")
+    sheets = read_excel_auto(file_bytes, filename, sheet_name=None)
     df = pd.concat([d.assign(sheet_name=name) for name, d in sheets.items()], ignore_index=True)
     df = df[['Transaction Date and Time','Product','Quantity', 'Pump Price',
              'License Plate','Card Number','Location Name','Reference No',
